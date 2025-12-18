@@ -2,44 +2,42 @@ import streamlit as st
 import pickle
 import numpy as np
 
-# --- PAGE CONFIG ---
-st.set_page_config(page_title="Salary Predictor", page_icon="💰")
+# Set page title
+st.set_page_config(page_title="Salary Predictor")
 
-# --- LOAD PICKLE FILES ---
-def load_assets():
-    with open('poly_model.pkl', 'rb') as f:
-        model = pickle.load(f)
-    with open('poly_transformer.pkl', 'rb') as f:
-        poly_transformer = pickle.load(f)
-    return model, poly_transformer
+st.title("Salary Prediction App")
+st.write("This app predicts salary based on Position Level using the Polynomial Regression model from the notebook.")
 
+# Load the saved model and the polynomial transformer
 try:
-    model, poly_transformer = load_assets()
+    model = pickle.load(open('poly_reg.pkl', 'rb'))
+    poly = pickle.load(open('poly_transformer.pkl', 'rb'))
 except FileNotFoundError:
-    st.error("Error: .pkl files not found. Please run the saving script first!")
-
-# --- APP UI ---
-st.title("💰 Position Salary Predictor")
-st.write("This app uses **Polynomial Regression (Degree 4)** to predict salaries based on organization levels.")
+    st.error("Error: Model files not found. Please ensure 'poly_reg.pkl' and 'poly_transformer.pkl' are in the same folder as this script.")
+    st.stop()
 
 # User Input
-level = st.slider("Select Position Level:", min_value=1.0, max_value=10.0, value=5.0, step=0.1)
+level = st.number_input("Enter Position Level (e.g., 1 to 10):", min_value=1.0, max_value=12.0, value=6.5, step=0.1)
 
 if st.button("Predict Salary"):
-    # 1. Convert input to 2D array
-    level_arr = np.array([[level]])
+    # 1. Reshape input to 2D array
+    val = np.array([[level]])
     
-    # 2. Transform the level into polynomial terms
-    level_poly = poly_transformer.transform(level_arr)
+    # 2. Transform the input using the loaded PolynomialFeatures object
+    val_poly = poly.transform(val)
     
-    # 3. Predict
-    prediction = model.predict(level_poly)
+    # 3. Make prediction
+    prediction = model.predict(val_poly)
     
     # 4. Display Result
-    st.success(f"### The predicted salary for Level {level} is: ${prediction[0]:,.2f}")
-    
-    # Fun visualization
-    st.metric(label="Estimated Annual Pay", value=f"${prediction[0]:,.2f}")
+    st.success(f"The predicted salary for level {level} is: **${prediction[0]:,.2f}**")
 
-st.divider()
-st.info("Level 1 = Junior | Level 5 = Manager | Level 10 = CEO")
+# Optional: Add information about the dataset
+st.info("""
+**Reference Levels:**
+1: Business Analyst, 
+4: Manager, 
+5: Country Manager, 
+8: Region Manager, 
+10: CEO
+""")
